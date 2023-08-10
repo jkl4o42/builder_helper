@@ -2,7 +2,6 @@ package git.jkl4o4.builder
 
 import android.app.Activity
 import android.net.Uri
-import android.util.Log
 import com.onesignal.OneSignal
 import git.jkl4o4.builder.sdk.AppsFlyerHandler
 import git.jkl4o4.builder.sdk.DeviceHandler
@@ -44,15 +43,10 @@ interface Builder {
             suspendCancellableCoroutine { cancellableContinuation ->
                 CoroutineScope(Dispatchers.IO).launch {
                     val appsData = AppsFlyerHandler().fetchAppsData(activity, appsKey)
-                    Log.e("TAG","appsData: $appsData")
                     val deepLink = FacebookHandler().fetchDeepLink(activity, fbId, fbToken)
-                    Log.e("TAG","deepLink: $deepLink")
                     val deviceData = DeviceHandler().fetchDeviseData(activity, appsKey, fbId, fbToken, fbKey)
-                    Log.e("TAG","deviceData: $deviceData")
                     val campaign = deepLink ?: appsData.find { it.first == Constants.CAMPAIGN }?.second
-                    Log.e("TAG","campaign: $campaign")
                     val subs = processCampaign(campaign)
-                    Log.e("TAG","campaignData: $subs")
 
                     val urlBuilder = Uri.Builder()
                     urlBuilder.scheme(Constants.HTTPS)
@@ -67,7 +61,6 @@ interface Builder {
                         urlBuilder.appendQueryParameter(it.first, it.second)
                     }
                     val push = subs[1].takeIf { !it.isNullOrEmpty() }
-                    Log.e("TAG","push: $push")
                     subs[9] = sub10
                     subs.forEachIndexed { index, value ->
                         urlBuilder.appendQueryParameter(
