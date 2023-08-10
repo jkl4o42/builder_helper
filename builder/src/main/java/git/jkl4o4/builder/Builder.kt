@@ -61,6 +61,7 @@ interface Builder {
                         urlBuilder.appendQueryParameter(it.first, it.second)
                     }
                     val push = subs[1].takeIf { !it.isNullOrEmpty() }
+                    subs.removeAt(1)
                     subs[9] = sub10
                     subs.forEachIndexed { index, value ->
                         urlBuilder.appendQueryParameter(
