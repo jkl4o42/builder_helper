@@ -3,6 +3,8 @@ package git.jkl4o4.builder.sdk
 import android.app.Activity
 import com.facebook.FacebookSdk
 import com.facebook.applinks.AppLinkData
+import git.jkl4o4.builder.Result
+import git.jkl4o4.builder.utils.Callbacks
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -24,10 +26,12 @@ class FacebookHandler {
                     val deepLink = appLinkData?.targetUri?.toString()
                     if (cancellableContinuation.isActive) cancellableContinuation.resume(deepLink)
                 } catch (e: Exception) {
+                    Callbacks.onError?.invoke(Result.Error(e))
                     if (cancellableContinuation.isActive)cancellableContinuation.resume(null)
                 }
             }
         } catch (e: Exception) {
+            Callbacks.onError?.invoke(Result.Error(e))
             if (cancellableContinuation.isActive) cancellableContinuation.resume(null)
         }
     }

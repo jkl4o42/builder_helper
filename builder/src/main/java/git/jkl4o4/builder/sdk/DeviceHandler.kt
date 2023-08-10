@@ -7,7 +7,10 @@ import android.provider.Settings
 import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
+import git.jkl4o4.builder.Result
 import git.jkl4o4.builder.utils.AfUserId
+import git.jkl4o4.builder.utils.Callbacks
+import git.jkl4o4.builder.utils.Constants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,20 +29,23 @@ class DeviceHandler {
         CoroutineScope(Dispatchers.IO).launch {
             val batteryManager = activity.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
             val batteryStatus: Float = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).takeIf { it != -1 }?.toFloat() ?: 100.0f
-            val googleAdId: String? = try { AdvertisingIdClient.getAdvertisingIdInfo(activity).id } catch (e: Exception) { null }
+            val googleAdId: String? = try { AdvertisingIdClient.getAdvertisingIdInfo(activity).id } catch (e: Exception) {
+                Callbacks.onError?.invoke(Result.Error(e))
+                null
+            }
             val adbEnabled: Boolean = Settings.Global.getInt(activity.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
 
             if (cancellableContinuation.isActive) cancellableContinuation.resume(
                 arrayListOf(
-                    Pair("google_adid", googleAdId),
-                    Pair("af_userid", AfUserId.getAfUserId(activity)),
-                    Pair("adb", adbEnabled.toString()),
-                    Pair("battery", batteryStatus.toString()),
-                    Pair("bundle", activity.packageName),
-                    Pair("dev_key", appsKey),
-                    Pair("fb_app_id", fbId),
-                    Pair("fb_at", fbToken),
-                    Pair("account_id", getAccountId(activity, fbKey)),
+                    Pair(Constants.GOOGLE_ADID, googleAdId),
+                    Pair(Constants.AF_USERID, AfUserId.getAfUserId(activity)),
+                    Pair(Constants.ADB, adbEnabled.toString()),
+                    Pair(Constants.BATTERY, batteryStatus.toString()),
+                    Pair(Constants.BUNDLE, activity.packageName),
+                    Pair(Constants.DEV_KEY, appsKey),
+                    Pair(Constants.FB_APP_ID, fbId),
+                    Pair(Constants.FB_AT, fbToken),
+                    Pair(Constants.ACCOUNT_ID, getAccountId(activity, fbKey)),
                 )
             )
         }
@@ -64,13 +70,14 @@ class DeviceHandler {
                 }
             })
         } catch (e: Exception) {
+            Callbacks.onError?.invoke(Result.Error(e))
             continuation.resume(null)
         }
     }
 
     fun parseReferrer(referral: String?, cipherKey: String): String? {
         val referralDecoded = safelyDecodeReferral(referral) ?: return null
-        if (!referralDecoded.contains("utm_content")) return null
+        if (!referralDecoded.contains(Constants.UTM_CONTENT)) return null
         return tryToDecryptReferrer(referralDecoded, cipherKey)
     }
 
@@ -78,6 +85,7 @@ class DeviceHandler {
         return try {
             URLDecoder.decode(referral, StandardCharsets.UTF_8.name())
         } catch (e: Exception) {
+            Callbacks.onError?.invoke(Result.Error(e))
             null
         }
     }
@@ -86,26 +94,27 @@ class DeviceHandler {
         return try {
             decryptReferrer(referralDecoded, cipherKey)
         } catch (e: Exception) {
+            Callbacks.onError?.invoke(Result.Error(e))
             null
         }
     }
 
     private fun decryptReferrer(referralDecoded: String, cipherKey: String): String {
-        val contentData = referralDecoded.split("${"utm_content"}=")[1]
+        val contentData = referralDecoded.split("${Constants.UTM_CONTENT}=")[1]
         val parsedJson = JSONObject(contentData)
-        val sourceData = JSONObject(parsedJson["source"].toString())
+        val sourceData = JSONObject(parsedJson[Constants.SOURCE].toString())
         val decryptedContent = performDecryption(sourceData, cipherKey)
-        return decryptedContent["account_id"].toString()
+        return decryptedContent[Constants.ACCOUNT_ID].toString()
     }
 
     private fun performDecryption(sourceData: JSONObject, cipherKey: String): JSONObject {
-        val decryptCipher = Cipher.getInstance("AES/GCM/NoPadding")
+        val decryptCipher = Cipher.getInstance(Constants.ALGORITHM)
         decryptCipher.init(
             Cipher.DECRYPT_MODE,
-            SecretKeySpec(hexToBytes(cipherKey), "AES/GCM/NoPadding"),
-            IvParameterSpec(hexToBytes(sourceData["nonce"].toString()))
+            SecretKeySpec(hexToBytes(cipherKey), Constants.ALGORITHM),
+            IvParameterSpec(hexToBytes(sourceData[Constants.NONCE].toString()))
         )
-        val decryptedContentBytes = decryptCipher.doFinal(hexToBytes(sourceData["data"].toString()))
+        val decryptedContentBytes = decryptCipher.doFinal(hexToBytes(sourceData[Constants.DATA].toString()))
         return JSONObject(String(decryptedContentBytes))
     }
 

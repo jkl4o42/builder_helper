@@ -8,6 +8,8 @@ import git.jkl4o4.builder.sdk.AppsFlyerHandler
 import git.jkl4o4.builder.sdk.DeviceHandler
 import git.jkl4o4.builder.sdk.FacebookHandler
 import git.jkl4o4.builder.utils.AfUserId
+import git.jkl4o4.builder.utils.Callbacks
+import git.jkl4o4.builder.utils.Constants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,9 +17,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 interface Builder {
-
-    suspend fun build(): Result
-    suspend fun buildAsync(): Result
 
     fun buildCallback(
         onSuccess: (success: Result.Success) -> Unit,
@@ -41,7 +40,7 @@ interface Builder {
         fun appsKey(appsKey: String) = apply { this.appsKey = appsKey }
         fun sub10(sub10: String) = apply { this.sub10 = sub10 }
 
-        override suspend fun build(): Result =
+       private suspend fun build(): Result =
             suspendCancellableCoroutine { cancellableContinuation ->
                 CoroutineScope(Dispatchers.IO).launch {
                     val appsData = AppsFlyerHandler().fetchAppsData(activity, appsKey)
@@ -50,17 +49,17 @@ interface Builder {
                     Log.e("TAG","deepLink: $deepLink")
                     val deviceData = DeviceHandler().fetchDeviseData(activity, appsKey, fbId, fbToken, fbKey)
                     Log.e("TAG","deviceData: $deviceData")
-                    val campaign = deepLink ?: appsData.find { it.first == "campaign" }?.second
+                    val campaign = deepLink ?: appsData.find { it.first == Constants.CAMPAIGN }?.second
                     Log.e("TAG","campaign: $campaign")
                     val subs = processCampaign(campaign)
                     Log.e("TAG","campaignData: $subs")
 
                     val urlBuilder = Uri.Builder()
-                    urlBuilder.scheme("https")
+                    urlBuilder.scheme(Constants.HTTPS)
                     urlBuilder.authority(domain)
 
                     appsData.forEach {
-                        if (it.first == "campaign") urlBuilder.appendQueryParameter(it.first, campaign)
+                        if (it.first == Constants.CAMPAIGN) urlBuilder.appendQueryParameter(it.first, campaign)
                         else urlBuilder.appendQueryParameter(it.first, it.second)
                     }
 
@@ -72,21 +71,21 @@ interface Builder {
                     subs[9] = sub10
                     subs.forEachIndexed { index, value ->
                         urlBuilder.appendQueryParameter(
-                            "${"sub"}${index + 1}",
+                            "${Constants.SUB}${index + 1}",
                             value
                         )
                     }
-                    urlBuilder.appendQueryParameter("push", push)
+                    urlBuilder.appendQueryParameter(Constants.PUSH, push)
                     OneSignal.setExternalUserId(AfUserId.getAfUserId(activity).toString())
-                    OneSignal.sendTag("sub_app", push ?: "organic")
+                    OneSignal.sendTag(Constants.SUB_APP, push ?: Constants.ORGANIC)
                     val buildUrl = replace(urlBuilder.toString(), Uri.encode(campaign.toString(), "utf-8"))
                     cancellableContinuation.resume(Result.Success(buildUrl))
                 }
             }
 
         private fun replace(url: String, value: String): String {
-            val regex = Regex("""([?&])${"campaign"}=[^&]*""")
-            return regex.replace(url, "$1${"campaign"}=$value")
+            val regex = Regex("""([?&])${Constants.CAMPAIGN}=[^&]*""")
+            return regex.replace(url, "$1${Constants.CAMPAIGN}=$value")
         }
 
         private fun processCampaign(inputStr: String?): ArrayList<String?> {
@@ -94,7 +93,7 @@ interface Builder {
             defaultValues.add(null)
             repeat(10) { defaultValues.add("") }
 
-            if (inputStr.isNullOrEmpty() || inputStr == "None") {
+            if (inputStr.isNullOrEmpty() || inputStr == Constants.NONE) {
                 return defaultValues
             }
 
@@ -107,32 +106,20 @@ interface Builder {
             return result
         }
 
-        override suspend fun buildAsync(): Result = suspendCancellableCoroutine { cancellableContinuation ->
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = build()
-                when (result::class) {
-                    Result.Success::class -> {
-                        if (cancellableContinuation.isCancelled) cancellableContinuation.resume(result as Result.Success)
-                    }
-                    Result.Error::class ->  {
-                        if (cancellableContinuation.isCancelled) cancellableContinuation.resume(result as Result.Error)
-                    }
-                }
-            }
-        }
-
         override fun buildCallback(
             onSuccess: (success: Result.Success) -> Unit,
             onError: (error: Result.Error) -> Unit
         ) {
             CoroutineScope(Dispatchers.IO).launch {
+                Callbacks.onSuccess = onSuccess
+                Callbacks.onError = onError
                 val result = build()
                 when (result::class) {
                     Result.Success::class -> {
-                        onSuccess(result as Result.Success)
+                        Callbacks.onSuccess?.invoke(result as Result.Success)
                     }
                     Result.Error::class ->  {
-                        onError(result as Result.Error)
+                        Callbacks.onError?.invoke(result as Result.Error)
                     }
                 }
             }

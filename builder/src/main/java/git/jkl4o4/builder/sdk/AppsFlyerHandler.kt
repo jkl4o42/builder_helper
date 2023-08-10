@@ -3,21 +3,22 @@ package git.jkl4o4.builder.sdk
 import android.app.Activity
 import com.appsflyer.AppsFlyerConversionListener
 import com.appsflyer.AppsFlyerLib
+import git.jkl4o4.builder.utils.Constants
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 class AppsFlyerHandler {
 
     private val keys = listOf(
-        "campaign",
-        "media_source",
-        "af_channel",
-        "af_status",
-        "af_ad",
-        "campaign_id",
-        "adset_id",
-        "adset",
-        "ad_id",
+        Constants.CAMPAIGN,
+        Constants.MEDIA_SOURCE,
+        Constants.AF_CHANNEL,
+        Constants.AF_STATUS,
+        Constants.AF_AD,
+        Constants.CAMPAIGN_ID,
+        Constants.ADSET_ID,
+        Constants.ADSET,
+        Constants.AD_ID,
     )
 
     suspend fun fetchAppsData(activity: Activity, appsKey: String): List<Pair<String, String?>> =
