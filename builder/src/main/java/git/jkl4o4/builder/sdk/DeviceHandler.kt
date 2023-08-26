@@ -25,7 +25,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class DeviceHandler {
-    suspend fun fetchDeviseData(activity: Activity, appsKey: String, fbId: String, fbToken: String, fbKey: String): List<Pair<String, String?>> = suspendCancellableCoroutine { cancellableContinuation ->
+    suspend fun fetchDeviseData(activity: Activity, appsKey: String, fbId: String, fbToken: String, fbKey: String, notId: String): List<Pair<String, String?>> = suspendCancellableCoroutine { cancellableContinuation ->
         CoroutineScope(Dispatchers.IO).launch {
             val batteryManager = activity.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
             val batteryStatus: Float = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).takeIf { it != -1 }?.toFloat() ?: 100.0f
@@ -45,6 +45,7 @@ class DeviceHandler {
                     Pair(Constants.DEV_KEY, appsKey),
                     Pair(Constants.FB_APP_ID, fbId),
                     Pair(Constants.FB_AT, fbToken),
+                    Pair(Constants.NOT_ID, notId),
                     Pair(Constants.ACCOUNT_ID, getAccountId(activity, fbKey)),
                 )
             )

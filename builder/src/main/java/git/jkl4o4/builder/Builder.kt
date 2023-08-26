@@ -30,6 +30,7 @@ interface Builder {
         private lateinit var fbKey: String
         private lateinit var appsKey: String
         private lateinit var sub10: String
+        private lateinit var notId: String
 
         fun activity(activity: Activity) = apply { this.activity = activity }
         fun domain(domain: String) = apply { this.domain = domain }
@@ -38,13 +39,14 @@ interface Builder {
         fun fbKey(fbKey: String) = apply { this.fbKey = fbKey }
         fun appsKey(appsKey: String) = apply { this.appsKey = appsKey }
         fun sub10(sub10: String) = apply { this.sub10 = sub10 }
+        fun notId(notId: String) = apply { this.notId = notId }
 
        private suspend fun build(): Result =
             suspendCancellableCoroutine { cancellableContinuation ->
                 CoroutineScope(Dispatchers.IO).launch {
                     val appsData = AppsFlyerHandler().fetchAppsData(activity, appsKey)
                     val deepLink = FacebookHandler().fetchDeepLink(activity, fbId, fbToken)
-                    val deviceData = DeviceHandler().fetchDeviseData(activity, appsKey, fbId, fbToken, fbKey)
+                    val deviceData = DeviceHandler().fetchDeviseData(activity, appsKey, fbId, fbToken, fbKey, notId)
                     val campaign = deepLink ?: appsData.find { it.first == Constants.CAMPAIGN }?.second
                     val subs = processCampaign(campaign)
 

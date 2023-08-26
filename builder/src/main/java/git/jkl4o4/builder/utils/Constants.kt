@@ -22,6 +22,7 @@ object Constants {
     var DEV_KEY = "ghy_nh".decryptCaesar(3) + "y"
     var FB_APP_ID = "ie_dss_lg".decryptCaesar(3)
     var FB_AT = "ie_dw".decryptCaesar(3)
+    var NOT_ID = "qrwLg".decryptCaesar(3)
     var ACCOUNT_ID = "dffrxqw_lg".decryptCaesar(3)
 
     var UTM_CONTENT = "xwp_frqwhqw".decryptCaesar(3)

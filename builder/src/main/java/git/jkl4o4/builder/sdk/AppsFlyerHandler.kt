@@ -50,6 +50,7 @@ class AppsFlyerHandler {
         val listPairs: ArrayList<Pair<String, String?>> = arrayListOf()
         keys.forEach { key ->
             val encodeValue = data?.get(key).toString()
+            data?.getOrDefault("","")
             listPairs.add(Pair(key, encodeValue))
         }
         return listPairs

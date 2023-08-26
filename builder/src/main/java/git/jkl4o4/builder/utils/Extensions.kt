@@ -19,5 +19,4 @@ object Extensions {
     fun String.decryptCaesar(offset: Int): String {
         return this.encryptCaesar(-offset)
     }
-
 }
