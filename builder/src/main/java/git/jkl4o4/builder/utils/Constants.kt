@@ -36,5 +36,4 @@ object Constants {
     var PUSH = "sxvk".decryptCaesar(3)
     var SUB_APP = "vxe_dss".decryptCaesar(3)
     var ORGANIC = "rujdqlf".decryptCaesar(3)
-    var NONE = "Qrqh".decryptCaesar(3)
 }

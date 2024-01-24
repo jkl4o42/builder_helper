@@ -89,7 +89,7 @@ interface Builder {
             defaultValues.add(null)
             repeat(10) { defaultValues.add("") }
 
-            if (inputStr.isNullOrEmpty() || inputStr == Constants.NONE) {
+            if (inputStr.isNullOrEmpty()) {
                 return defaultValues
             }
 
